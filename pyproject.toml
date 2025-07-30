@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hexseg"
+version = "0.1.0"
+description = "Spatial crime analysis helpers using H3, geopandas & networkx"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [ { name="Iain Agar", email="routineactivity85@gmail.com" } ]
+requires-python = ">=3.11"
+dependencies = [
+  "pandas",
+  "numpy",
+  "geopandas",
+  "h3",
+  "shapely",
+  "scikit-learn",
+  "networkx",
+  "folium"
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+]
