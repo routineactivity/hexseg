@@ -82,8 +82,8 @@ def get_hexagons(gdf_polygons: gpd.GeoDataFrame,
             else:
                 raise AttributeError("h3 module has no cell boundary function")
 
-        pts = [(lng, lat) for lat, lng in coords]
-        records.append((h, boundary_name, Polygon(pts)))
+            pts = [(lng, lat) for lat, lng in coords]
+            records.append((h, boundary_name, Polygon(pts)))
 
     # Assemble and reproject back to the original CRS
     out = (
