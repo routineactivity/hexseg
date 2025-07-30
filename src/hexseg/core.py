@@ -66,12 +66,24 @@ def get_hexagons(gdf_polygons: gpd.GeoDataFrame,
             hex_ids.update(ids)
 
         # build polygons: **always** use lat/lon tuples flipped to lon/lat
+        #for h in hex_ids:
+        #    # this returns a list of (lat, lon) tuples
+        #    coords = h3.h3_to_geo_boundary(h)
+        #    # flip to (x, y) = (lon, lat)
+        #    pts = [(lng, lat) for lat, lng in coords]
+        #    records.append((h, boundary_name, Polygon(pts)))
+
         for h in hex_ids:
-            # this returns a list of (lat, lon) tuples
+        # get the hex boundary as a list of (lat, lon)
+        if hasattr(h3, "h3_to_geo_boundary"):
             coords = h3.h3_to_geo_boundary(h)
-            # flip to (x, y) = (lon, lat)
-            pts = [(lng, lat) for lat, lng in coords]
-            records.append((h, boundary_name, Polygon(pts)))
+        elif hasattr(h3, "cell_to_boundary"):
+            coords = h3.cell_to_boundary(h)
+        else:
+            raise AttributeError("h3 module has no cell boundary function")
+
+        pts = [(lng, lat) for lat, lng in coords]
+        records.append((h, boundary_name, Polygon(pts)))
 
     # Assemble and reproject back to the original CRS
     out = (
