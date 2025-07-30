@@ -1,4 +1,5 @@
 import geopandas as gpd
+from shapely.geometry import Polygon
 from hexseg import get_hexagons
 
 def test_get_hexagons_empty():
