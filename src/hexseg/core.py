@@ -74,13 +74,13 @@ def get_hexagons(gdf_polygons: gpd.GeoDataFrame,
         #    records.append((h, boundary_name, Polygon(pts)))
 
         for h in hex_ids:
-        # get the hex boundary as a list of (lat, lon)
-        if hasattr(h3, "h3_to_geo_boundary"):
-            coords = h3.h3_to_geo_boundary(h)
-        elif hasattr(h3, "cell_to_boundary"):
-            coords = h3.cell_to_boundary(h)
-        else:
-            raise AttributeError("h3 module has no cell boundary function")
+            # get the hex boundary as a list of (lat, lon)
+            if hasattr(h3, "h3_to_geo_boundary"):
+                coords = h3.h3_to_geo_boundary(h)
+            elif hasattr(h3, "cell_to_boundary"):
+                coords = h3.cell_to_boundary(h)
+            else:
+                raise AttributeError("h3 module has no cell boundary function")
 
         pts = [(lng, lat) for lat, lng in coords]
         records.append((h, boundary_name, Polygon(pts)))
