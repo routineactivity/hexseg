@@ -163,4 +163,4 @@ m
 **Contributions are welcome!** This project is maintained as a hobby, so while issues and pull requests are appreciated, responses may be delayed.
 
 ## Acknowledgements
-This project was inspired by Madison-PD’s micro-time hotspots. ChatGPT helped translate previous workflows into reusable code and assisted with PyPI publication. 
+This project was inspired by [Madison-PD’s micro-time hotspots](https://github.com/Madison-PD/microtime_hotspots). ChatGPT helped translate previous workflows into reusable code and assisted with PyPI publication. 
