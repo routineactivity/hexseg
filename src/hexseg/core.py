@@ -523,7 +523,7 @@ def clusters_to_gdf(clusters, G, df, fid_col='fid', crime_count_col='crime_count
     Parameters:
     ----------
     clusters : list of dict
-        Each dict from greedy_clusters must have keys:
+        Each dict from segment_clusters must have keys:
         - 'cluster_id': int
         - 'nodes': iterable of fid values
         - 'crime_sum': total crime count for the cluster
