@@ -1,6 +1,6 @@
 # hexseg
 
-**hexseg** is a Python package designed to simplify generating statistics to prioritise location for crime prevention efforts. It assists in streamlining two popular count-based methods by creating hexagonal grids or street-segment analyses across geographic study areas. It is designed with crime analysis in mind, but may also be suitable for other urban planning and resource allocation tasks.
+**hexseg** is a Python package designed to simplify generating statistics to prioritise locations for crime prevention efforts. It assists in streamlining two popular count-based methods by creating hexagonal grids or street-segment analyses across geographic study areas. It is designed with crime analysis in mind, but may also be suitable for other urban planning and resource allocation tasks.
 
 ## Features
 
