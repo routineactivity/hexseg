@@ -4,21 +4,32 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hexseg"
-version = "0.1.3"
+version = "0.2.0"
 description = "Spatial crime analysis with hexagons and street segments"
 readme = "README.md"
+license = { text = "GPL-3.0-only" }
 authors = [ { name="Iain Agar", email="routineactivity85@gmail.com" } ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
   "pandas",
   "numpy",
-  "geopandas",
-  "h3",
-  "shapely",
+  "geopandas>=0.14",
+  "h3>=4.0",
+  "shapely>=2.0",
   "scikit-learn",
   "networkx",
-  "folium"
+  "folium",
+  "branca",
 ]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/routineactivity/hexseg"
+Changelog = "https://github.com/routineactivity/hexseg/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where   = ["src"]

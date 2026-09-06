@@ -5,9 +5,10 @@
 ## Features
 
 - **Hexagonal grid analyses:** generate Uber hexagon layers over a defined study area and calculate count and weight based statistics to identify and prioritise locations.
-- **Hexagonal grid statistics:** calculate spatially lagged statistics (mean or sum of neighbours), generate global and local ranks and z-scores.
+- **Hexagonal grid statistics:** calculate spatially lagged statistics (mean or sum of neighbours, using true H3 grid adjacency), generate global and local ranks and z-scores.
 - **Road segment analysis:** calculate counts and ranks for road segments, or for contiguous clusters of segments, to identify and prioritise locations.
-- **Interactive visualisation:** add priority hexagons and/or segments to interactive maps using folium.
+- **Interactive visualisation:** add priority hexagons and/or segments to interactive maps using folium, with optional choropleth colouring and hover tooltips.
+- **Input validation throughout:** clear, specific errors (wrong geometry type, missing/geographic CRS, missing columns) raised as early as possible, and warnings when data is silently dropped (e.g. points too far from any road, or outside the hex coverage area).
 
 ## Installation
 
@@ -20,6 +21,14 @@ Alternatively, install directly from GitHub:
 ```
 pip install git+https://github.com/routineactivity/hexseg.git
 ```
+
+## What's new in 0.2.0
+
+This release fixes a real correctness bug and changes a couple of default behaviours. If you're upgrading from 0.1.x, see [CHANGELOG.md](CHANGELOG.md) for the full list -- in short:
+
+- **`build_adj_graph` now returns `(G, df)` instead of just `G`.** Always pass that same `df` on to `clusters_to_gdf` (see the segment example below). This closes a bug where node IDs generated internally could silently drift out of alignment with your own DataFrame, attaching the wrong geometry to a cluster.
+- **`add_spatial_lag` now uses true H3 grid adjacency by default** (`method='h3'`), not approximate nearest-centroid lookup. Pass `method='knn', k=6` to reproduce the old default exactly.
+- **`summarise_by_hex(count_col='any', ...)` is deprecated** in favour of `summarise_by_hex(count=True, ...)`. The old call still works (with a deprecation warning).
 
 ## Quick Start
 
@@ -50,17 +59,16 @@ hexes = HS.get_hexagons(gdf_districts, name_col="lad21nm", resolution=9)
 hex_both = HS.summarise_by_hex(
     hexes_gdf=hexes,
     crimes_gdf=gdf_crimes,
-    count_col='any',
+    count=True,
     weight_col='pseudo_harm'
     )
 
-# optional: add spatial lagged means/sums to counts/weights for nearest neighbours
-# default neighbours is 6 - typically a 'donut' around hexagons, unless on edge of boundary
+# optional: add spatial lagged means/sums to counts/weights for true H3 neighbours
+# default is the immediate ring of up to 6 neighbouring hexes (fewer at the study-area edge)
 hex_lagged = HS.add_spatial_lag(
     hexes_gdf=hex_both,
     count_col='crime_count',
-    weight_col='crime_weight',
-    k=6
+    weight_col='crime_weight'
 )
 
 # add zscores and ranks (global and local) to measure/s being used for prioritisation
@@ -74,13 +82,12 @@ hex_stats = HS.add_spatial_stats(hex_lagged, col='weight_plus_mean_sqrt', group_
 # Choose which measure you want to map outputs for
 # Example below, the top 20 ranked by crime harm weight plus mean, grouped by district
 # By this measure, we have selected the top 20 hexagons for each district
+# hex_color_col choropleth-shades the hexagons by that column and adds a hover tooltip
 m = HS.create_folium_map(
       hex_gdf=hex_stats,
       hex_query="weight_plus_mean_sqrt_rank_by_geo_boundary <= 20",
-      seg_gdf=None,
-      seg_query=None,
-      district_gdf=gdf_districts,
-      district_query=None)
+      hex_color_col="weight_plus_mean_sqrt_rank_by_geo_boundary",
+      district_gdf=gdf_districts)
 m
 ```
 
@@ -88,7 +95,7 @@ m
 
 ### Street Segment Example
 
-In this example, you can calculate crime counts for individual street segments or contiguous clusters of segments for easier prioritisation. Counting by individual segments alone often identifies more locations than can realistically be addressed with available resources. By clustering segments, you can create manageable areas for targeted interventions, customised based on segment size (reflecting patrol distance or officer coverage) and crime thresholds. Segment clusters can be used independently or combined with hexagonal grids to highlight priority streets within key hexagons. 
+In this example, you can calculate crime counts for individual street segments or contiguous clusters of segments for easier prioritisation. Counting by individual segments alone often identifies more locations than can realistically be addressed with available resources. By clustering segments, you can create manageable areas for targeted interventions, customised based on segment size (reflecting patrol distance or officer coverage) and crime thresholds. Segment clusters can be used independently or combined with hexagonal grids to highlight priority streets within key hexagons.
 
 ```
 import geopandas as gpd
@@ -112,15 +119,22 @@ roads_with_counts = HS.count_crimes_by_nearest_road(
     )
 
 # build adjacency graph
-G = HS.build_adj_graph(roads_with_counts,
-                          fid_col=None,
-                          crime_count_col='crime_count')
+# snap_tolerance bridges small digitising gaps/overshoots common in commercial
+# road centreline data, in addition to segments that exactly touch (default 0)
+G, roads_indexed = HS.build_adj_graph(
+    roads_with_counts,
+    fid_col=None,
+    crime_count_col='crime_count',
+    snap_tolerance=1.0
+)
 
 # create user defined clusters of segments
 clusters = HS.segment_clusters(G, min_size=5, max_size=8, min_crimes=100)
 
 # add cluster id and sum of crime in clusters to segment layer
-gdf_clusters = HS.clusters_to_gdf(clusters, G, roads_with_counts, fid_col='fid', crime_count_col='crime_count')
+# NOTE: pass roads_indexed here (build_adj_graph's second return value),
+# not roads_with_counts -- see "What's new in 0.2.0" above.
+gdf_clusters = HS.clusters_to_gdf(clusters, G, roads_indexed, fid_col='fid', crime_count_col='crime_count')
 ```
 
 ### Plotting segment results
@@ -129,13 +143,10 @@ gdf_clusters = HS.clusters_to_gdf(clusters, G, roads_with_counts, fid_col='fid',
 # visualise results
 # Visualise the street segment clusters
 m = HS.create_folium_map(
-      hex_gdf=None,
-      hex_query=None,
       seg_gdf=gdf_clusters,
       seg_query="cluster_crime_sum > 200",
-      district_gdf=gdf_districts,
-      district_query=None) 
-      
+      district_gdf=gdf_districts)
+
 m
 
 # or visualise highest individual segments
@@ -143,13 +154,11 @@ m
 # If you don't want to cluster segments and just see the highest
 # Use the roads_with_counts object you created
 m = HS.create_folium_map(
-      hex_gdf=None,
-      hex_query=None,
       seg_gdf=roads_with_counts,
       seg_query="crime_count > 20",
-      district_gdf=gdf_districts,
-      district_query=None) 
-      
+      seg_color_col="crime_count",
+      district_gdf=gdf_districts)
+
 m
 ```
 ![Brooklyn segment maps](https://github.com/routineactivity/hexseg/blob/main/images/hexseg_bkn_segs.png)
@@ -163,4 +172,4 @@ m
 **Contributions are welcome!** This project is maintained as a hobby, so while issues and pull requests are appreciated, responses may be delayed.
 
 ## Acknowledgements
-This project was inspired by [Madison-PD’s micro-time hotspots](https://github.com/Madison-PD/microtime_hotspots). ChatGPT helped translate previous workflows into reusable code and assisted with PyPI publication. 
+This project was inspired by [Madison-PD's micro-time hotspots](https://github.com/Madison-PD/microtime_hotspots). ChatGPT helped translate previous workflows into reusable code and assisted with PyPI publication.
